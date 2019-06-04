@@ -8,12 +8,12 @@ version: 0.2
 phases:
   install:
     commands:
-      - pip install -q --upgrade cfn-lint awscli botocore boto3
+      - pip install -q --upgrade cfn-lint awscli botocore boto3 aws-sam-translator
       - echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
       - apt-add-repository ppa:brightbox/ruby-ng
       - apt-get update -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/brightbox-ruby-ng*
-      - apt-get install ruby2.2 -qq
-      - gem install cfn-nag --no-ri --no-rdoc
+      - apt-get install ruby2.6 -qq
+      - gem install cfn-nag --no-document
   pre_build:
     commands:
       - find ./templates -type f | xargs cfn-lint -f parseable -c I -t
@@ -26,4 +26,3 @@ artifacts:
   files:
     - $CFN_PACKAGED_TEMPLATE
     - $CFN_CONFIG
-
