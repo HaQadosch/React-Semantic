@@ -1,5 +1,7 @@
 {
   "Parameters": {
+    "pS3DeploymentBucketName": "xb-amplify-login-front-end",
+    "pDomainName": "awsbits.co.uk",
     "pWebsiteIndexFile": "index.html"
   },
   "Tags": {
