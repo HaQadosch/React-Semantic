@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+#      - npm install --prefix $SOURCE_PATH
+      - npm install -g gulp
+      - npm install --prefix src/amazon-connect-streams
+      - npm install --prefix src/ccp-test
+  pre_build:
+    commands:
+#      - npm run lint --prefix $SOURCE_PATH
+      - npm run lint --prefix src/ccp-test
+  build:
+    commands:
+#      - npm run build --prefix $SOURCE_PATH
+      - gulp --gulpfile src/amazon-connect-streams/gulpfile.js
+      - npm run build --prefix src/ccp-test
+artifacts:
+  files:
+#    - $SOURCE_PATH/dist/*
+    - src/ccp-test/dist/*

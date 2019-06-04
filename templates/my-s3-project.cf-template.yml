@@ -1,0 +1,199 @@
+# This template will install a lambda function. Use the ci/params.parameters file to specify
+# the parameters for this template or the build will fail. This is classed as the 'Parent'
+# template name when you are using the pipleines build from the AWS refarch repo located here:
+# https://github.ecs-digital.co.uk/ECSD/ecsd-aws-refarch/tree/master/templates/codepipeline
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: ECSD Example S3 Deployment Stack
+
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: S3 Bucket configuration
+        Parameters:
+          - pWebsiteIndexFile
+          - pDomainName
+          - pS3DeploymentBucketName
+
+Parameters:
+
+  pS3DeploymentBucketName:
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
+    ConstraintDescription: bucket name can include numbers, lowercase
+      letters, uppercase letters, periods (.), and hyphens (-). It cannot start or
+      end with a hyphen (-).
+    Description: The name of the website S3 Bucket
+    Type: String
+
+  pDomainName:
+    AllowedPattern: ^[0-9a-z-\/\.]*$
+    ConstraintDescription: domain can include numbers, lowercase letters, 
+      hyphens (-), and forward slash (/). It cannot start or end
+      with forward slash (/) because they are automatically appended.
+    Description: the domain name being used to host the CCP, such as 'awsbits.co.uk'
+    Type: String
+  
+  pWebsiteIndexFile:
+    AllowedPattern: ^[0-9a-zA-Z-\/\.]*$
+    ConstraintDescription: key can include numbers, lowercase letters,
+      uppercase letters, hyphens (-), and forward slash (/). It cannot start or end
+      with forward slash (/) because they are automatically appended.
+    Description: The name of the file that should be served when the site is visited
+    Type: String
+
+Conditions:
+
+  Disable: !Equals [ 'true', 'false' ]
+
+Resources:
+
+  rWebsiteS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref pS3DeploymentBucketName
+      WebsiteConfiguration:
+       IndexDocument: !Ref pWebsiteIndexFile
+  
+  rWebsiteBucketPolicy:
+    Condition: Disable
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref rWebsiteS3Bucket
+      PolicyDocument:
+        Statement:
+          - Sid: SetupCloudFront
+            Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Join [ "", [ "arn:aws:s3:::", !Ref pS3DeploymentBucketName, "/*" ] ]
+            Principal:
+              CanonicalUser: !GetAtt rCloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  rDeployWebsiteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: DeployWebsite
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                  - s3:GetObjectAcl
+                  - s3:DeleteObject
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+    
+  rCloudFrontDistribution:
+    Condition: Disable
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref pDomainName
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId:
+            !Join [ "", [ !Ref pS3DeploymentBucketName, "-origin"] ]
+          ViewerProtocolPolicy: https-only
+        Enabled: True
+        DefaultRootObject: !Ref pWebsiteIndexFile
+        Origins:
+          - DomainName:
+              !Join [ "", [ !Ref pS3DeploymentBucketName, ".s3.amazonaws.com" ] ]
+            Id: 
+              !Join [ "", [ !Ref pS3DeploymentBucketName, "-origin"] ]
+            S3OriginConfig:
+              OriginAccessIdentity:
+                !Join [ "", [ "origin-access-identity/cloudfront/", !Ref rCloudFrontOriginAccessIdentity ] ]
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        WebACLId: !Ref rCcpWafAcl
+
+  rCloudFrontOriginAccessIdentity:
+    Condition: Disable
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'CloudFront OAI for ${pDomainName}'
+  
+  rIpWhitelist:
+    Condition: Disable
+    Type: AWS::WAF::IPSet
+    Properties: 
+      Name: IPSet for whitelisted IP adresses
+      IPSetDescriptors: 
+        - Type: IPV4
+          Value: 155.136.158.0/24
+        - Type: IPV4
+          Value: 79.173.148.100/32
+
+  rIpWhitelistRule:
+    Condition: Disable
+    Type: AWS::WAF::Rule
+    Properties: 
+      MetricName: IpWhiteListRuleMetric
+      Name: IpWhiteListRule
+      Predicates:
+        - DataId: !Ref rIpWhitelist
+          Type: IPMatch
+          Negated: false 
+      
+  rCcpWafAcl:
+    Condition: Disable
+    Type: AWS::WAF::WebACL
+    Properties: 
+      Name: WebACL to limit access to CCP
+      DefaultAction: 
+        Type: BLOCK
+      MetricName: CcpWebAcl
+      Rules: 
+        - Action: 
+            Type: ALLOW
+          Priority: 1
+          RuleId: !Ref rIpWhitelistRule
+
+Outputs:
+
+  DeploymentS3BucketName:
+    Description: Name of S3 bucket the website is deployed to
+    Value: !Ref rWebsiteS3Bucket
+
+  CloudFrontDistributionName:
+    Condition: Disable
+    Description: Arn of the CloudFront distribution
+    Value: !Ref rCloudFrontDistribution

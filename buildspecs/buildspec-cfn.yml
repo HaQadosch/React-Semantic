@@ -1,0 +1,29 @@
+# For more information on using the buildspec see the following link:
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
+#
+# Use this file to specify how to handle the CloudFormation Stacks for the application
+# NOTE: This file uses the -cfn.yml extenstion to signify the use of CloudFormation in
+# the build stage.
+version: 0.2
+phases:
+  install:
+    commands:
+      - pip install -q --upgrade cfn-lint awscli botocore boto3
+      - echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+      - apt-add-repository ppa:brightbox/ruby-ng
+      - apt-get update -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/brightbox-ruby-ng*
+      - apt-get install ruby2.2 -qq
+      - gem install cfn-nag --no-ri --no-rdoc
+  pre_build:
+    commands:
+      - find ./templates -type f | xargs cfn-lint -f parseable -c I -t
+      - cfn_nag_scan --input-path ./templates
+  build:
+    commands:
+      - aws cloudformation package --template-file $CFN_PARENT_TEMPLATE --output-template-file $CFN_PACKAGED_TEMPLATE --s3-bucket $CFN_BUCKET_NAME --kms-key-id $CFN_BUCKET_KMS_KEY
+artifacts:
+  type: zip
+  files:
+    - $CFN_PACKAGED_TEMPLATE
+    - $CFN_CONFIG
+
