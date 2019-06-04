@@ -74,7 +74,7 @@ Resources:
             Effect: Allow
             Resource: !Join [ "", [ "arn:aws:s3:::", !Ref pS3DeploymentBucketName, "/*" ] ]
             Principal:
-              CanonicalUser: !GetAtt rCloudFrontOriginAccessIdentity.S3CanonicalUserId
+              AWS: "*"
 
   rDeployWebsiteRole:
     Type: AWS::IAM::Role
