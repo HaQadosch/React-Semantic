@@ -3,20 +3,14 @@ version: 0.2
 phases:
   install:
     commands:
-#      - npm install --prefix $SOURCE_PATH
-      - npm install -g gulp
-      - npm install --prefix src/amazon-connect-streams
-      - npm install --prefix src/ccp-test
-  pre_build:
-    commands:
-#      - npm run lint --prefix $SOURCE_PATH
-      - npm run lint --prefix src/ccp-test
+      - find $CODEBUILD_SRC_DIR/app-logit -maxdepth 2 -type f -name "package.json" | sort | xargs -I{} dirname {} | xargs -L 1 npm install --prefix
+  # pre_build:
+  #   commands:
+  #     - find $CODEBUILD_SRC_DIR/src -maxdepth 2 -type f -name "package.json" | sort | xargs -I{} dirname {} | xargs -L 1 npm run lint --prefix
   build:
     commands:
-#      - npm run build --prefix $SOURCE_PATH
-      - gulp --gulpfile src/amazon-connect-streams/gulpfile.js
-      - npm run build --prefix src/ccp-test
+      - find $CODEBUILD_SRC_DIR/app-logit -maxdepth 2 -type f -name "package.json" | sort | xargs -I{} dirname {} | xargs -L 1 npm run build --prefix
 artifacts:
+  base-directory: $CODEBUILD_SRC_DIR/app-logit/dist/
   files:
-#    - $SOURCE_PATH/dist/*
-    - src/ccp-test/dist/*
+    - '**/*'

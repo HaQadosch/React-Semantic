@@ -1,0 +1,8 @@
+{
+  "Parameters": {
+    "pWebsiteIndexFile": "index.html"
+  },
+  "Tags": {
+    "Environment": "dev"
+  }
+}
