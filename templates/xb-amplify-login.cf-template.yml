@@ -63,11 +63,7 @@ Resources:
   
   rWebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F16
-            reason: "This is a public facing S3 bucket and should be permitted."
+    Metadata:  
     Properties:
       Bucket: !Ref rWebsiteS3Bucket
       PolicyDocument:
