@@ -1,6 +1,8 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
+import { Counter } from './components/Counter'
+import { Container } from 'semantic-ui-react'
 
 const App: React.FC = () => {
   return (
@@ -19,6 +21,12 @@ const App: React.FC = () => {
           Learn React
         </a>
       </header>
+      <main>
+        <Container>
+          <h1>React Hooks Context</h1>
+          <Counter />
+        </Container>
+      </main>
     </div>
   );
 }
