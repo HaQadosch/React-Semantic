@@ -63,7 +63,7 @@ Resources:
   
   rWebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
-    Metadata:  
+    # Metadata:  
     Properties:
       Bucket: !Ref rWebsiteS3Bucket
       PolicyDocument:
