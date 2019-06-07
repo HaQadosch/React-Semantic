@@ -1,8 +1,10 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { Counter } from './components/Counter'
 import { Container } from 'semantic-ui-react'
+
+import { Counter } from './components/Counter'
+import { Contacts } from './components/Contacts'
 
 const App: React.FC = () => {
   return (
@@ -10,7 +12,7 @@ const App: React.FC = () => {
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.tsx</code> and save to reload.
+          Scroll down to see the magic.
         </p>
         <a
           className="App-link"
@@ -25,6 +27,9 @@ const App: React.FC = () => {
         <Container>
           <h1>React Hooks Context</h1>
           <Counter />
+        </Container>
+        <Container>
+          <Contacts />
         </Container>
       </main>
     </div>
