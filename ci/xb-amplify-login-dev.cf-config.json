@@ -1,9 +1,0 @@
-{
-  "Parameters": {
-    "pDomainName": "awsbits.co.uk",
-    "pWebsiteIndexFile": "index.html"
-  },
-  "Tags": {
-    "Environment": "dev"
-  }
-}
